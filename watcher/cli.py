@@ -66,6 +66,9 @@ def main(
         # Compute diff
         diff = compute_diff(old_jobs, new_jobs)
 
+        # Update store with new jobs FIRST (before filtering notifications)
+        store.upsert_jobs(new_jobs_list)
+
         # Filter out already-notified changes
         new_to_notify = [j for j in diff.new if not store.was_notified(j.job_key, "new")]
         removed_to_notify = [j for j in diff.removed if not store.was_notified(j.job_key, "removed")]
@@ -111,9 +114,6 @@ def main(
             store.mark_notified(job.job_key, "removed")
         for old, new in changed_to_notify:
             store.mark_notified(new.job_key, "changed")
-
-        # Update store with new jobs
-        store.upsert_jobs(new_jobs_list)
 
         return len(new_to_notify) > 0 or len(removed_to_notify) > 0 or len(changed_to_notify) > 0
 
