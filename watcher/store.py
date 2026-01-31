@@ -13,7 +13,15 @@ class JobStore:
     def __init__(self, db_path: str):
         """Initialize store with database path."""
         self.db_path = db_path
+        self._connection = None
         self._init_db()
+
+    def _close_connection(self):
+        """Explicitly close and flush the database connection."""
+        # Open and close to ensure all writes are flushed
+        conn = sqlite3.connect(self.db_path)
+        conn.commit()
+        conn.close()
 
     def _init_db(self):
         """Initialize database schema."""

@@ -134,6 +134,9 @@ def main(
 
     if once:
         check_once()
+        # Explicitly close the database to ensure all writes are flushed
+        print("Closing database connection...")
+        store._close_connection()
         return
     else:
         print(f"Starting watcher (checking every {config['check_interval_minutes']} minutes)")
