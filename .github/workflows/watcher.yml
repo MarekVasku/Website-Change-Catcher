@@ -1,8 +1,19 @@
 name: Website Change Catcher
 
 on:
+  push:
+    branches:
+      - main  # Run on push to main for testing
   schedule:
-    - cron: '*/30 * * * *'  # Every 30 minutes
+    # Runs every 30 minutes to check for new job postings
+    # All times in UTC timezone
+    # Other options:
+    # - cron: '0 * * * *'      # Every hour at minute 0
+    # - cron: '0 */2 * * *'    # Every 2 hours
+    # - cron: '0 9,17 * * *'   # Twice daily: 9 AM and 5 PM UTC
+    # - cron: '0 9-17 * * *'   # Every hour during work hours (9 AM - 5 PM UTC)
+    # - cron: '*/15 * * * *'   # Every 15 minutes
+    - cron: '*/30 * * * *'
   workflow_dispatch:  # Allow manual runs
 
 jobs:

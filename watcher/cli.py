@@ -43,16 +43,6 @@ def main(
     def check_once() -> bool:
         """Perform a single check cycle. Returns True if changes were found."""
         print(f"Fetching {config['watch_url']}...")
-        
-        # Debug: Check if state DB exists and what's in it
-        import os
-        if os.path.exists(config["state_db_path"]):
-            print(f"State DB exists at {config['state_db_path']}")
-            old_jobs_before = store.get_all_jobs()
-            print(f"Loaded {len(old_jobs_before)} existing jobs from database")
-        else:
-            print(f"State DB does NOT exist at {config['state_db_path']} - starting fresh")
-        
         html = fetch_url(config["watch_url"])
 
         if not html:
@@ -77,12 +67,7 @@ def main(
         diff = compute_diff(old_jobs, new_jobs)
 
         # Update store with new jobs FIRST (before filtering notifications)
-        print(f"Saving {len(new_jobs_list)} jobs to database...")
         store.upsert_jobs(new_jobs_list)
-        
-        # Verify they were saved
-        saved_jobs = store.get_all_jobs()
-        print(f"Database now contains {len(saved_jobs)} jobs after save")
 
         # Filter out already-notified changes
         new_to_notify = [j for j in diff.new if not store.was_notified(j.job_key, "new")]
@@ -134,19 +119,8 @@ def main(
 
     if once:
         check_once()
-        # Explicitly close the database to ensure all writes are flushed
-        print("Closing database connection...")
         store._close_connection()
-        
-        # Verify what's actually in the database before exit
-        final_jobs = store.get_all_jobs()
-        print(f"FINAL CHECK: Database contains {len(final_jobs)} jobs before upload")
-        if final_jobs:
-            print(f"Sample job keys: {list(final_jobs.keys())[:3]}")
-        return
     else:
-        print(f"Starting watcher (checking every {config['check_interval_minutes']} minutes)")
-        print("Press Ctrl+C to stop")
         while True:
             try:
                 check_once()

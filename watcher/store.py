@@ -13,7 +13,6 @@ class JobStore:
     def __init__(self, db_path: str):
         """Initialize store with database path."""
         self.db_path = db_path
-        self._connection = None
         self._init_db()
 
     def _close_connection(self):
@@ -157,7 +156,7 @@ class JobStore:
                 title=row["title"],
                 city=row["city"],
                 date=row["date"] or "",
-                day_of_week=row["day_of_week"] if "day_of_week" in row.keys() and row["day_of_week"] else "",
+                day_of_week=row["day_of_week"] if row["day_of_week"] else "",
                 time_range=row["time_range"] or "",
                 duration_hours=row["duration_hours"] or "",
                 wage_czk_per_h=row["wage_czk_per_h"] or "",
