@@ -17,12 +17,11 @@ jobs:
         run: |
           uv pip install -e .
       - name: Download previous state
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         continue-on-error: true
         with:
           name: watcher-state
           path: ./
-          github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run watcher
         env:
           WATCH_URL: ${{ secrets.WATCH_URL }}
@@ -36,7 +35,7 @@ jobs:
         run: |
           uv run python -m watcher --once
       - name: Upload state
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: watcher-state
