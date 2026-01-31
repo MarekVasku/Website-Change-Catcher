@@ -119,7 +119,7 @@ If coming from an earlier version:
 - [ ] Support multiple job boards (config-driven parsing)
 - [ ] Webhook notifications (Discord, Slack, etc.)
 - [ ] Web UI dashboard for viewing jobs
-- [ ] Telegram/SMS notifications
+- [ ] SMS notifications
 
 ---
 
