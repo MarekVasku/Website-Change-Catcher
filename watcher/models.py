@@ -31,7 +31,8 @@ class Job:
         return text.strip()
 
     def compute_key(self) -> str:
-        """Compute stable key for this job."""
+        """Compute stable key for this job.
+        comment"""
         import hashlib
         normalized = self.normalize_text()
         return hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:16]
