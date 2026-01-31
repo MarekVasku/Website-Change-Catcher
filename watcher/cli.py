@@ -77,7 +77,12 @@ def main(
         diff = compute_diff(old_jobs, new_jobs)
 
         # Update store with new jobs FIRST (before filtering notifications)
+        print(f"Saving {len(new_jobs_list)} jobs to database...")
         store.upsert_jobs(new_jobs_list)
+        
+        # Verify they were saved
+        saved_jobs = store.get_all_jobs()
+        print(f"Database now contains {len(saved_jobs)} jobs after save")
 
         # Filter out already-notified changes
         new_to_notify = [j for j in diff.new if not store.was_notified(j.job_key, "new")]
