@@ -83,7 +83,10 @@ def main(
 
         # Print summary
         print(f"Changes detected: +{len(diff.new)} new, -{len(diff.removed)} removed, ~{len(diff.changed)} changed")
-        print(f"To notify: +{len(new_to_notify)} new, -{len(removed_to_notify)} removed, ~{len(changed_to_notify)} changed")
+        print(
+            f"To notify: +{len(new_to_notify)} new, "
+            f"-{len(removed_to_notify)} removed, ~{len(changed_to_notify)} changed"
+        )
 
         # Send notification if there are changes to notify
         if new_to_notify or removed_to_notify or changed_to_notify:

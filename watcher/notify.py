@@ -61,7 +61,9 @@ def send_notification(diff: JobDiff, url: str) -> bool:
             body_parts.append(f"Title: {old_job.title} -> {new_job.title}")
             body_parts.append(f"Location: {old_job.city} -> {new_job.city}")
             body_parts.append(f"Date: {old_job.date} -> {new_job.date}")
-            body_parts.append(f"Day of week: {getattr(old_job, 'day_of_week', '') or '-'} -> {getattr(new_job, 'day_of_week', '') or '-'}")
+            old_dow = getattr(old_job, 'day_of_week', '') or '-'
+            new_dow = getattr(new_job, 'day_of_week', '') or '-'
+            body_parts.append(f"Day of week: {old_dow} -> {new_dow}")
             body_parts.append(f"Time: {old_job.time_range} -> {new_job.time_range}")
             body_parts.append(f"Duration: {old_job.duration_hours}h -> {new_job.duration_hours}h")
             body_parts.append(f"Wage: {old_job.wage_czk_per_h} -> {new_job.wage_czk_per_h}")
