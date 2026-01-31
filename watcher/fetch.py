@@ -1,6 +1,5 @@
 """HTTP client with retry logic and anti-bot hygiene."""
 
-import os
 import time
 from typing import Optional
 

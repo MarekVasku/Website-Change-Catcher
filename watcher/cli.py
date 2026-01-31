@@ -8,15 +8,14 @@ from pathlib import Path
 import typer
 from dotenv import load_dotenv
 
-# Load .env from project root (not shared, in .gitignore)
-load_dotenv(Path(__file__).resolve().parent.parent / ".env")
-
 from watcher.diff import compute_diff
 from watcher.fetch import fetch_url
-from watcher.models import Job
 from watcher.notify import send_notification
 from watcher.parse import parse_html
 from watcher.store import JobStore
+
+# Load .env from project root (not shared, in .gitignore)
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 app = typer.Typer(invoke_without_command=True)
 
@@ -114,7 +113,7 @@ def main(
         return
     else:
         print(f"Starting watcher (checking every {config['check_interval_minutes']} minutes)")
-        print(f"Press Ctrl+C to stop")
+        print("Press Ctrl+C to stop")
         while True:
             try:
                 check_once()

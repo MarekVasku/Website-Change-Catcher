@@ -1,6 +1,6 @@
 """Tests for diff logic."""
 
-from watcher.diff import JobDiff, compute_diff
+from watcher.diff import compute_diff
 from watcher.models import Job
 
 
