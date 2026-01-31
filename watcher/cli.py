@@ -137,6 +137,12 @@ def main(
         # Explicitly close the database to ensure all writes are flushed
         print("Closing database connection...")
         store._close_connection()
+        
+        # Verify what's actually in the database before exit
+        final_jobs = store.get_all_jobs()
+        print(f"FINAL CHECK: Database contains {len(final_jobs)} jobs before upload")
+        if final_jobs:
+            print(f"Sample job keys: {list(final_jobs.keys())[:3]}")
         return
     else:
         print(f"Starting watcher (checking every {config['check_interval_minutes']} minutes)")
