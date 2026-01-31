@@ -43,6 +43,16 @@ def main(
     def check_once() -> bool:
         """Perform a single check cycle. Returns True if changes were found."""
         print(f"Fetching {config['watch_url']}...")
+        
+        # Debug: Check if state DB exists and what's in it
+        import os
+        if os.path.exists(config["state_db_path"]):
+            print(f"State DB exists at {config['state_db_path']}")
+            old_jobs_before = store.get_all_jobs()
+            print(f"Loaded {len(old_jobs_before)} existing jobs from database")
+        else:
+            print(f"State DB does NOT exist at {config['state_db_path']} - starting fresh")
+        
         html = fetch_url(config["watch_url"])
 
         if not html:
