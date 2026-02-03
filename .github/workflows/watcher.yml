@@ -5,15 +5,9 @@ on:
     branches:
       - main  # Run on push to main for testing
   schedule:
-    # Runs every 30 minutes to check for new job postings
-    # All times in UTC timezone
-    # Other options:
-    # - cron: '0 * * * *'      # Every hour at minute 0
-    # - cron: '0 */2 * * *'    # Every 2 hours
-    # - cron: '0 9,17 * * *'   # Twice daily: 9 AM and 5 PM UTC
-    # - cron: '0 9-17 * * *'   # Every hour during work hours (9 AM - 5 PM UTC)
-    # - cron: '*/15 * * * *'   # Every 15 minutes
-    - cron: '*/30 * * * *'
+    # Runs hourly; time window enforced in workflow step using Europe/Prague
+    # (avoids UTC/DST mismatches). Outside 07:00–21:00 Prague time, watcher is skipped.
+    - cron: '0 * * * *'
   workflow_dispatch:  # Allow manual runs
 
 jobs:
@@ -35,7 +29,23 @@ jobs:
           key: watcher-state-${{ github.run_id }}
           restore-keys: |
             watcher-state-
+      - name: Check Prague time window (07:00–21:00)
+        id: timegate
+        run: |
+          python - <<'PY'
+          import os
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+
+          now = datetime.now(ZoneInfo("Europe/Prague"))
+          run = 7 <= now.hour <= 21
+          print(f"Prague time: {now.isoformat()} | run={run}")
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+              f.write(f"run={'true' if run else 'false'}\n")
+          PY
       - name: Run watcher
+        if: steps.timegate.outputs.run == 'true'
         env:
           WATCH_URL: ${{ secrets.WATCH_URL }}
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
