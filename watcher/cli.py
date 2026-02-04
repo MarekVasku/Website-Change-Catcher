@@ -36,7 +36,7 @@ def main(
     """Run the watcher."""
     if ctx.invoked_subcommand is not None:
         return
-    
+
     config = get_config()
     store = JobStore(config["state_db_path"])
 
@@ -84,7 +84,7 @@ def main(
             new_only_diff.new = new_to_notify
             new_only_diff.removed = []
             new_only_diff.changed = []
-            
+
             print("Sending email for new jobs...")
             if send_notification(new_only_diff, config["watch_url"]):
                 print("Email sent")
@@ -94,7 +94,7 @@ def main(
                 print("ERROR: Failed to send email")
         else:
             print("No new jobs to notify")
-        
+
         # Mark removed/changed as notified without sending email
         for job in removed_to_notify:
             store.mark_notified(job.job_key, "removed")

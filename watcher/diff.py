@@ -36,7 +36,7 @@ def compute_diff(old_jobs: Dict[str, Job], new_jobs: Dict[str, Job]) -> JobDiff:
 
         old_dow = getattr(old_job, "day_of_week", "") or ""
         new_dow = getattr(new_job, "day_of_week", "") or ""
-        
+
         if (
             old_job.title != new_job.title
             or old_job.city != new_job.city

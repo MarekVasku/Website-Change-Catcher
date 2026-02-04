@@ -11,7 +11,7 @@ from watcher.models import Job
 def parse_html(html: str) -> List[Job]:
     """
     Parse brigoska.cz HTML and extract job listings.
-    
+
     Only returns valid job rows with date, time, duration, and wage.
     """
     parser = HTMLParser(html)
@@ -99,7 +99,7 @@ def _parse_job_row(row) -> Optional[Job]:
         if date_idx > 0:
             # Everything before date is title + city
             before_date = " ".join(parts[:date_idx]).lstrip("» ").strip()
-            
+
             # Try to find Czech city names
             city_keywords = [
                 "Praha", "Brno", "Ostrava", "Plzeň", "Liberec", "Olomouc",

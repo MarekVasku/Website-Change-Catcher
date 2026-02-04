@@ -24,7 +24,7 @@ class JobStore:
         """Initialize database schema."""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        
+
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS jobs (
                 job_key TEXT PRIMARY KEY,
@@ -40,13 +40,13 @@ class JobStore:
                 last_seen TIMESTAMP NOT NULL
             )
         """)
-        
+
         # Add day_of_week column if it doesn't exist (for old DBs)
         try:
             cursor.execute("ALTER TABLE jobs ADD COLUMN day_of_week TEXT")
         except sqlite3.OperationalError:
             pass
-        
+
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS notifications (
                 notification_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -56,12 +56,12 @@ class JobStore:
                 FOREIGN KEY (job_key) REFERENCES jobs(job_key)
             )
         """)
-        
+
         cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_notifications_job_key 
+            CREATE INDEX IF NOT EXISTS idx_notifications_job_key
             ON notifications(job_key)
         """)
-        
+
         conn.commit()
         conn.close()
 

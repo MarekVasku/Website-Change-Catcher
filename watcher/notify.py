@@ -87,7 +87,7 @@ def send_notification(diff: JobDiff, url: str) -> bool:
 
     # Remove spaces from app password (common Gmail issue)
     smtp_pass = smtp_pass.replace(" ", "")
-    
+
     try:
         if smtp_port == 465:
             with smtplib.SMTP_SSL(smtp_host, smtp_port) as server:
