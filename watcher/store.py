@@ -45,7 +45,7 @@ class JobStore:
         try:
             cursor.execute("ALTER TABLE jobs ADD COLUMN day_of_week TEXT")
         except sqlite3.OperationalError:
-            pass
+            pass  # Column already exists
 
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS notifications (

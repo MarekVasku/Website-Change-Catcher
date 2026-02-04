@@ -93,7 +93,7 @@ def _parse_job_row(row) -> Optional[Job]:
     city = ""
     parts = raw_text.split()
     if parts:
-        # Find where the date starts
+        # Find index of first date pattern in parts list
         date_idx = next((i for i, part in enumerate(parts) if re.match(r"\d{1,2}\.\d{1,2}\.\d{4}", part)), -1)
 
         if date_idx > 0:
