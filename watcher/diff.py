@@ -1,4 +1,4 @@
-"""Change detection between old and new job sets."""
+"""Compare old and new job sets."""
 
 from typing import Dict, List, Tuple
 
@@ -6,7 +6,7 @@ from watcher.models import Job
 
 
 class JobDiff:
-    """Represents changes between job sets."""
+    """Changes between job sets."""
 
     def __init__(self):
         self.new: List[Job] = []
@@ -15,37 +15,28 @@ class JobDiff:
 
 
 def compute_diff(old_jobs: Dict[str, Job], new_jobs: Dict[str, Job]) -> JobDiff:
-    """
-    Compute differences between old and new job sets.
-
-    Args:
-        old_jobs: Dictionary of old jobs keyed by job_key
-        new_jobs: Dictionary of new jobs keyed by job_key
-
-    Returns:
-        JobDiff object with new, removed, and changed jobs
-    """
+    """Find what's new, removed, or changed between job sets."""
     diff = JobDiff()
 
     old_keys = set(old_jobs.keys())
     new_keys = set(new_jobs.keys())
 
-    # New jobs: in new but not in old
+    # New jobs
     for key in new_keys - old_keys:
         diff.new.append(new_jobs[key])
 
-    # Removed jobs: in old but not in new
+    # Removed jobs
     for key in old_keys - new_keys:
         diff.removed.append(old_jobs[key])
 
-    # Changed jobs: same key but different content
+    # Changed jobs (same key but different content)
     for key in old_keys & new_keys:
         old_job = old_jobs[key]
         new_job = new_jobs[key]
 
-        # Compare fields (excluding timestamps and key)
         old_dow = getattr(old_job, "day_of_week", "") or ""
         new_dow = getattr(new_job, "day_of_week", "") or ""
+        
         if (
             old_job.title != new_job.title
             or old_job.city != new_job.city

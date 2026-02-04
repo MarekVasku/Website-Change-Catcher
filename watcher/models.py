@@ -1,5 +1,7 @@
-"""Data models for job listings."""
+"""Job listing data."""
 
+import hashlib
+import re
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
@@ -7,7 +9,7 @@ from typing import Optional
 
 @dataclass
 class Job:
-    """Represents a job listing."""
+    """A job listing with all its details."""
 
     title: str
     city: str
@@ -22,16 +24,13 @@ class Job:
     last_seen: Optional[datetime] = None
 
     def normalize_text(self) -> str:
-        """Normalize text for key generation."""
-        import re
+        """Clean up whitespace and special chars for consistent key generation."""
         text = f"{self.title} {self.city} {self.date} {self.day_of_week} {self.time_range} {self.wage_czk_per_h}"
-        # Remove NBSP and normalize whitespace
-        text = text.replace("\u00a0", " ")
-        text = re.sub(r"\s+", " ", text)
+        text = text.replace("\u00a0", " ")  # Replace non-breaking spaces
+        text = re.sub(r"\s+", " ", text)     # Collapse whitespace
         return text.strip()
 
     def compute_key(self) -> str:
-        """Compute stable key for this job."""
-        import hashlib
+        """Generate a unique key from the job details."""
         normalized = self.normalize_text()
         return hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:16]

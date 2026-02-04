@@ -1,4 +1,4 @@
-"""HTML parsing to extract job listings."""
+"""Parse HTML to extract job listings."""
 
 import re
 from typing import List, Optional
@@ -10,16 +10,15 @@ from watcher.models import Job
 
 def parse_html(html: str) -> List[Job]:
     """
-    Parse HTML and extract job listings from the brigoska.cz jobs table.
-
-    Only extracts actual job rows: must have date, time, duration, and wage.
+    Parse brigoska.cz HTML and extract job listings.
+    
+    Only returns valid job rows with date, time, duration, and wage.
     """
     parser = HTMLParser(html)
     jobs = []
 
-    # Target table rows that look like job listings:
-    # Must contain » (bullet), date pattern, and wage (e.g. "181 Kč/h")
-    job_row_pattern = re.compile(
+    # Pattern to match job rows: must have bullet, date, time, duration, and wage
+    job_pattern = re.compile(
         r"».*\d{1,2}\.\d{1,2}\.\d{4}.*\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}.*\(\d+(?:\.\d+)?\s*h\).*\d+\s*Kč"
     )
 
@@ -27,10 +26,10 @@ def parse_html(html: str) -> List[Job]:
         text = tr.text(separator=" ", strip=True) if tr else ""
         if not text or "»" not in text or not re.search(r"\d+\s*Kč\s*/?\s*h", text, re.I):
             continue
-        if not job_row_pattern.search(text):
+        if not job_pattern.search(text):
             continue
 
-        job = _parse_job_container(tr)
+        job = _parse_job_row(tr)
         if job and _is_valid_job(job):
             jobs.append(job)
 
@@ -38,7 +37,7 @@ def parse_html(html: str) -> List[Job]:
 
 
 def _is_valid_job(job: Job) -> bool:
-    """Only include jobs with all required fields (filters out noise)."""
+    """Check if job has all required fields and is a weekend job."""
     day = (job.day_of_week or "").strip().lower()
     is_weekend = day in {"so", "ne"}
     return bool(
@@ -50,28 +49,17 @@ def _is_valid_job(job: Job) -> bool:
     )
 
 
-def _parse_job_container(container) -> Optional[Job]:
-    """Parse a single job container element."""
-    raw_text = container.text(separator=" ", strip=True)
+def _parse_job_row(row) -> Optional[Job]:
+    """Parse a job row from the HTML table."""
+    raw_text = row.text(separator=" ", strip=True)
     if not raw_text or len(raw_text) < 10:
         return None
 
-    # Normalize whitespace
     raw_text = re.sub(r"\s+", " ", raw_text).strip()
 
-    # Try to extract structured fields
-    # Pattern: title, location, date/time, wage
-    # Example: "Název práce Praha 26.1.2026 Po 06:00 - 14:00 (8h) 180 Kč/h"
-
-    title = ""
-    city = ""
+    # Extract date and day of week (Czech: Po, Út, St, Čt, Pá, So, Ne)
     date = ""
     day_of_week = ""
-    time_range = ""
-    duration_hours = ""
-    wage_czk_per_h = ""
-
-    # Extract date and day of week (Czech abbrev: Po, Út, St, Čt, Pá, So, Ne)
     date_match = re.search(r"(\d{1,2}\.\d{1,2}\.\d{4})\s+(Po|Út|St|Čt|Pá|So|Ne)\b", raw_text)
     if date_match:
         date = date_match.group(1)
@@ -80,36 +68,39 @@ def _parse_job_container(container) -> Optional[Job]:
         plain_date = re.search(r"(\d{1,2}\.\d{1,2}\.\d{4})", raw_text)
         if plain_date:
             date = plain_date.group(1)
+
+    # Extract time range (HH:MM - HH:MM)
+    time_range = ""
     if date:
-        # Extract time range: HH:MM - HH:MM
         time_match = re.search(r"(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})", raw_text)
         if time_match:
             time_range = f"{time_match.group(1)} - {time_match.group(2)}"
-        # Extract duration: (Nh) or (N h)
-        duration_match = re.search(r"\((\d+(?:\.\d+)?)\s*h\)", raw_text)
-        if duration_match:
-            duration_hours = duration_match.group(1)
 
-    # Extract wage: NNN Kč/h or NNN Kč/h
+    # Extract duration (Nh)
+    duration_hours = ""
+    duration_match = re.search(r"\((\d+(?:\.\d+)?)\s*h\)", raw_text)
+    if duration_match:
+        duration_hours = duration_match.group(1)
+
+    # Extract wage (NNN Kč/h)
+    wage_czk_per_h = ""
     wage_match = re.search(r"(\d+)\s*Kč\s*/?\s*h", raw_text, re.IGNORECASE)
     if wage_match:
         wage_czk_per_h = f"{wage_match.group(1)} Kč/h"
 
-    # Try to split title and city
-    # Usually the first part is title, second might be city
+    # Extract title and city
+    title = ""
+    city = ""
     parts = raw_text.split()
     if parts:
-        # Find where date starts
-        date_idx = -1
-        for i, part in enumerate(parts):
-            if re.match(r"\d{1,2}\.\d{1,2}\.\d{4}", part):
-                date_idx = i
-                break
+        # Find where the date starts
+        date_idx = next((i for i, part in enumerate(parts) if re.match(r"\d{1,2}\.\d{1,2}\.\d{4}", part)), -1)
 
         if date_idx > 0:
-            # Everything before date is likely title + city (strip » bullet)
+            # Everything before date is title + city
             before_date = " ".join(parts[:date_idx]).lstrip("» ").strip()
-            # Try to identify city (common Czech cities or location words)
+            
+            # Try to find Czech city names
             city_keywords = [
                 "Praha", "Brno", "Ostrava", "Plzeň", "Liberec", "Olomouc",
                 "České Budějovice", "Hradec Králové", "Ústí nad Labem",
@@ -118,14 +109,13 @@ def _parse_job_container(container) -> Optional[Job]:
             ]
             for keyword in city_keywords:
                 if keyword in before_date:
-                    # Split on city
                     city_idx = before_date.find(keyword)
                     title = before_date[:city_idx].strip()
                     city = before_date[city_idx:].strip()
                     break
 
+            # Fallback: last word is city, rest is title
             if not city:
-                # Fallback: assume last word before date is city, rest is title
                 words = before_date.split()
                 if len(words) > 1:
                     city = words[-1]
@@ -133,11 +123,9 @@ def _parse_job_container(container) -> Optional[Job]:
                 else:
                     title = before_date
 
-    # If we couldn't parse, use raw text as title
     if not title:
-        title = raw_text[:100]  # Limit length
+        title = raw_text[:100]
 
-    # Create job object
     job = Job(
         title=title or "Unknown",
         city=city or "Unknown",

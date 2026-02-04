@@ -8,16 +8,14 @@ from watcher.models import Job
 
 
 class JobStore:
-    """Manages job state in SQLite database."""
+    """Manages job state in SQLite."""
 
     def __init__(self, db_path: str):
-        """Initialize store with database path."""
         self.db_path = db_path
         self._init_db()
 
     def _close_connection(self):
-        """Explicitly close and flush the database connection."""
-        # Open and close to ensure all writes are flushed
+        """Flush and close the database."""
         conn = sqlite3.connect(self.db_path)
         conn.commit()
         conn.close()
@@ -26,6 +24,7 @@ class JobStore:
         """Initialize database schema."""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
+        
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS jobs (
                 job_key TEXT PRIMARY KEY,
@@ -41,10 +40,13 @@ class JobStore:
                 last_seen TIMESTAMP NOT NULL
             )
         """)
+        
+        # Add day_of_week column if it doesn't exist (for old DBs)
         try:
             cursor.execute("ALTER TABLE jobs ADD COLUMN day_of_week TEXT")
         except sqlite3.OperationalError:
-            pass  # column already exists (new DB or migrated)
+            pass
+        
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS notifications (
                 notification_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -54,10 +56,12 @@ class JobStore:
                 FOREIGN KEY (job_key) REFERENCES jobs(job_key)
             )
         """)
+        
         cursor.execute("""
             CREATE INDEX IF NOT EXISTS idx_notifications_job_key 
             ON notifications(job_key)
         """)
+        
         conn.commit()
         conn.close()
 
@@ -73,33 +77,20 @@ class JobStore:
 
             # Check if job exists
             cursor.execute("SELECT first_seen FROM jobs WHERE job_key = ?", (job.job_key,))
-            row = cursor.fetchone()
+            exists = cursor.fetchone()
 
-            if row:
+            if exists:
                 # Update existing job
                 cursor.execute("""
                     UPDATE jobs SET
-                        title = ?,
-                        city = ?,
-                        date = ?,
-                        day_of_week = ?,
-                        time_range = ?,
-                        duration_hours = ?,
-                        wage_czk_per_h = ?,
-                        raw_text = ?,
-                        last_seen = ?
+                        title = ?, city = ?, date = ?, day_of_week = ?,
+                        time_range = ?, duration_hours = ?, wage_czk_per_h = ?,
+                        raw_text = ?, last_seen = ?
                     WHERE job_key = ?
                 """, (
-                    job.title,
-                    job.city,
-                    job.date,
-                    job.day_of_week or "",
-                    job.time_range,
-                    job.duration_hours,
-                    job.wage_czk_per_h,
-                    job.raw_text,
-                    now,
-                    job.job_key,
+                    job.title, job.city, job.date, job.day_of_week or "",
+                    job.time_range, job.duration_hours, job.wage_czk_per_h,
+                    job.raw_text, now, job.job_key,
                 ))
             else:
                 # Insert new job
@@ -110,24 +101,16 @@ class JobStore:
                         first_seen, last_seen
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
-                    job.job_key,
-                    job.title,
-                    job.city,
-                    job.date,
-                    job.day_of_week or "",
-                    job.time_range,
-                    job.duration_hours,
-                    job.wage_czk_per_h,
-                    job.raw_text,
-                    now,
-                    now,
+                    job.job_key, job.title, job.city, job.date, job.day_of_week or "",
+                    job.time_range, job.duration_hours, job.wage_czk_per_h,
+                    job.raw_text, now, now,
                 ))
 
         conn.commit()
         conn.close()
 
     def get_all_jobs(self) -> Dict[str, Job]:
-        """Retrieve all jobs from database."""
+        """Get all jobs from database."""
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
@@ -137,7 +120,7 @@ class JobStore:
 
         jobs = {}
         for row in rows:
-            # Parse timestamps from SQLite (stored as ISO format strings)
+            # Parse timestamps
             first_seen = None
             last_seen = None
             if row["first_seen"]:
@@ -170,7 +153,7 @@ class JobStore:
         return jobs
 
     def mark_notified(self, job_key: str, change_type: str) -> None:
-        """Mark that a notification was sent for a job change."""
+        """Mark that we sent a notification for this change."""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute("""
@@ -181,7 +164,7 @@ class JobStore:
         conn.close()
 
     def was_notified(self, job_key: str, change_type: str) -> bool:
-        """Check if a notification was already sent for this change."""
+        """Check if we already sent a notification for this change."""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute("""
