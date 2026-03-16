@@ -69,8 +69,12 @@ def main(
         # Update store with new jobs FIRST (before filtering notifications)
         store.upsert_jobs(new_jobs_list)
 
-        # Filter out already-notified changes
-        new_to_notify = [j for j in diff.new if not store.was_notified(j.job_key, "new")]
+        # Notify about all currently visible jobs not yet successfully notified.
+        # This covers both genuinely new jobs and jobs that were stored earlier
+        # but whose notification was never sent (e.g. SMTP not configured on
+        # the first run). Using new_jobs_list instead of diff.new ensures that
+        # previously-seen-but-never-notified weekend jobs are not silently lost.
+        new_to_notify = [j for j in new_jobs_list if not store.was_notified(j.job_key, "new")]
         removed_to_notify = [j for j in diff.removed if not store.was_notified(j.job_key, "removed")]
         changed_to_notify = [
             (old, new)
