@@ -39,11 +39,14 @@ def parse_html(html: str) -> List[Job]:
 
 def _is_valid_job(job: Job) -> bool:
     """Only include jobs with all required fields (filters out noise)."""
+    day = (job.day_of_week or "").strip().lower()
+    is_weekend = day in {"so", "ne"}
     return bool(
         job.wage_czk_per_h
         and job.date
         and job.time_range
         and job.duration_hours
+        and is_weekend
     )
 
 
