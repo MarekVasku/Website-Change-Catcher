@@ -1,4 +1,4 @@
-"""HTTP client with retry logic and anti-bot hygiene."""
+"""HTTP fetcher with retry logic."""
 
 import time
 from typing import Optional
@@ -8,15 +8,9 @@ import httpx
 
 def fetch_url(url: str, max_retries: int = 3, timeout: float = 30.0) -> Optional[str]:
     """
-    Fetch a URL with retry logic and exponential backoff.
+    Fetch a URL with retries and exponential backoff.
 
-    Args:
-        url: URL to fetch
-        max_retries: Maximum number of retry attempts
-        timeout: Request timeout in seconds
-
-    Returns:
-        HTML content as string, or None if all retries failed
+    Returns the page HTML or None if it fails.
     """
     headers = {
         "User-Agent": (
@@ -38,14 +32,12 @@ def fetch_url(url: str, max_retries: int = 3, timeout: float = 30.0) -> Optional
                 if e.response.status_code == 404:
                     return None
                 if attempt < max_retries - 1:
-                    wait_time = 2 ** attempt
-                    time.sleep(wait_time)
+                    time.sleep(2 ** attempt)  # Exponential backoff: 1s, 2s, 4s
                     continue
                 return None
             except (httpx.RequestError, httpx.TimeoutException):
                 if attempt < max_retries - 1:
-                    wait_time = 2 ** attempt
-                    time.sleep(wait_time)
+                    time.sleep(2 ** attempt)
                     continue
                 return None
 
